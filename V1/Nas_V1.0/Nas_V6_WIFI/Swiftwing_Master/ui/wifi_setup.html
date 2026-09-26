@@ -1,0 +1,70 @@
+
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Swiftwing NAS · Network Setup</title>
+<style>
+/* Inline source: see wifi_setup.css */
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <div class="heroTop"><div class="heroBadge">Swiftwing Setup · UI V7.6.1</div><div class="heroChip">5 Board Sync</div></div>
+    <h1>Choose your Home Wi-Fi</h1>
+    <p>Select the home network once. Master will sync it to Node 1, Node 2, C3 DNS, and the ESP32 Monitor.</p>
+  </div>
+
+  <div class="grid">
+    <section class="panel">
+      <div class="panelHead">
+        <div>
+          <div class="eyebrow">Current status</div>
+          <div class="titleSm">Connection Overview</div>
+        </div>
+        <button class="ghost" onclick="scan()">Rescan</button>
+      </div>
+      <div id="current" class="statusCard">Loading Wi-Fi status...</div>
+      <div class="miniNote">If the home Wi-Fi is unavailable, the boards will stay on the Swiftwing setup bridge until you choose a network.</div>
+    </section>
+
+    <section class="panel">
+      <div class="panelHead">
+        <div>
+          <div class="eyebrow">Nearby networks</div>
+          <div class="titleSm">Available Wi-Fi</div>
+        </div>
+      </div>
+      <div id="nets" class="nets"><div class="empty">Scanning nearby networks...</div></div>
+    </section>
+  </div>
+
+  <section id="form" class="connectPanel">
+    <div class="panelHead" style="margin-bottom:12px">
+      <div>
+        <div class="eyebrow">Selected network</div>
+        <div class="titleSm">Connect all Swiftwing boards</div>
+      </div>
+    </div>
+    <label class="fieldLabel">Wi-Fi name</label>
+    <input id="ssid" readonly>
+    <label id="passLabel" class="fieldLabel">Wi-Fi password</label>
+    <input id="pass" type="password" placeholder="Enter Wi-Fi password">
+    <button class="primary" onclick="applyWifi()">Connect all 5 boards</button>
+    <div id="msg" class="msg"></div>
+  </section>
+</div>
+<script>
+let selectedOpen=false;
+function esc(s){return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')}
+function wifiQuality(rssi){if(rssi>=-55)return{label:'Excellent',icon:'▰▰▰▰'};if(rssi>=-67)return{label:'Strong',icon:'▰▰▰▱'};if(rssi>=-75)return{label:'Okay',icon:'▰▰▱▱'};return{label:'Weak',icon:'▰▱▱▱'}}
+async function status(){try{const r=await fetch('/api/wifi/status',{cache:'no-store'});const d=await r.json();document.getElementById('current').innerHTML=d.connected?('<div class="statusTitle">Connected to '+esc(d.ssid)+'</div><div class="statusMeta">IP: '+esc(d.ip)+' · RSSI: '+d.rssi+' dBm</div><div class="chipRow"><span class="chip">Home Wi-Fi</span><span class="chip">Bridge AP: '+esc(d.bridgeIp)+'</span></div>'):('<div class="statusTitle">Not connected to home Wi-Fi</div><div class="statusMeta">Join the setup bridge and choose a network below.</div><div class="chipRow"><span class="chip">Setup AP: '+esc(d.bridgeIp)+'</span></div>')}catch(e){document.getElementById('current').textContent='Unable to read Wi-Fi status.'}}
+async function scan(){const box=document.getElementById('nets');box.innerHTML='<div class="empty">Scanning nearby networks...</div>';try{const r=await fetch('/api/wifi/scan',{cache:'no-store'});const d=await r.json();box.innerHTML='';(d.networks||[]).forEach(n=>{const q=wifiQuality(n.rssi);const b=document.createElement('button');b.className='net';b.innerHTML='<div class="netLeft"><div class="netName">'+esc(n.ssid)+'</div><div class="netMeta">'+q.label+' · '+n.rssi+' dBm</div></div><div class="netRight"><span class="netPill">'+q.icon+'</span><span class="netPill">'+(n.open?'Open':'Secure')+'</span></div>';b.onclick=()=>choose(n.ssid,n.open,b);box.appendChild(b)});if(!box.children.length)box.innerHTML='<div class="empty">No networks found.</div>';}catch(e){box.innerHTML='<div class="empty">Wi-Fi scan failed.</div>'}}
+function choose(ssid,isOpen,btn){selectedOpen=isOpen;document.querySelectorAll('.net').forEach(el=>el.classList.remove('selected'));if(btn)btn.classList.add('selected');document.getElementById('ssid').value=ssid;document.getElementById('pass').value='';document.getElementById('pass').style.display=isOpen?'none':'block';document.getElementById('passLabel').style.display=isOpen?'none':'block';document.getElementById('form').classList.add('show');document.getElementById('msg').textContent=''}
+async function applyWifi(){const ssid=document.getElementById('ssid').value;const pass=selectedOpen?'':document.getElementById('pass').value;const body='ssid='+encodeURIComponent(ssid)+'&password='+encodeURIComponent(pass);document.getElementById('msg').textContent='Sending Wi-Fi to all five boards...';try{const r=await fetch('/api/wifi/apply',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});const d=await r.json();if(!r.ok)throw new Error(d.error||'Failed');document.getElementById('msg').textContent='Saved. The five boards are restarting. Reconnect your phone/computer to '+ssid+' and open swiftwingnas.tplinkdns.com again.';}catch(e){document.getElementById('msg').textContent=e.message;}}
+status();scan();
+</script>
+</body>
+</html>

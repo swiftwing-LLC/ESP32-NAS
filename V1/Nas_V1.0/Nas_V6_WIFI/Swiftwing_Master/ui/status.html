@@ -1,0 +1,23 @@
+
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Swiftwing NAS · System Status</title>
+<style>
+/* Inline source: see status.css */
+</style>
+</head>
+<body>
+<div class="top"><div class="brand">SWIFTWING / INFRASTRUCTURE</div><div class="nav"><a href="/">Files</a><a class="active" href="/status">System Status</a><a href="/logout">Logout</a></div></div>
+<div class="page"><div class="eyebrow">Network / Node Telemetry</div><div class="title">System Status</div><div class="sub">Live state from the Master, storage nodes and network services.</div><div id="cards" class="grid"></div><div class="backnote"><b>Storage policy:</b> Node 1 is the primary volume used by Files. Node 2 remains available for backup and background services.</div></div>
+<script>
+function fmtBytes(n){n=Number(n||0);if(n<1024)return n+' B';if(n<1048576)return(n/1024).toFixed(1)+' KB';if(n<1073741824)return(n/1048576).toFixed(1)+' MB';return(n/1073741824).toFixed(2)+' GB'}
+function fmtUptime(sec){sec=Number(sec||0);const d=Math.floor(sec/86400);sec%=86400;const h=Math.floor(sec/3600);sec%=3600;const m=Math.floor(sec/60);if(d>0)return d+'d '+h+'h';if(h>0)return h+'h '+m+'m';return m+'m'}
+function statusLabel(on){return'<span class="dot '+(on?'on':'off')+'"></span>'+(on?'Online':'Offline')}
+function storageCard(n,title,role){const total=Number(n.total||0),used=Number(n.used||0),pct=total>0?Math.min(100,used/total*100):0;return'<div class="card"><div class="row"><div><div class="name">'+title+'</div><div class="role">'+role+'</div></div><div class="state">'+statusLabel(n.online)+'</div></div><div class="data"><div class="key">Device</div><div>'+n.id+'</div><div class="key">IP</div><div>'+(n.online?n.ip:'—')+'</div><div class="key">Storage</div><div>'+(n.storageReady?'Ready':'Not ready')+'</div><div class="key">Used</div><div>'+fmtBytes(n.used)+'</div><div class="key">Free</div><div>'+fmtBytes(n.free)+'</div><div class="key">Uptime</div><div>'+fmtUptime(n.uptime)+'</div></div><div class="bar"><div class="fill" style="width:'+pct+'%"></div></div></div>'}
+function serviceCard(s,title,role,extra){return'<div class="card"><div class="row"><div><div class="name">'+title+'</div><div class="role">'+role+'</div></div><div class="state">'+statusLabel(s.online)+'</div></div><div class="data"><div class="key">IP</div><div>'+(s.online?s.ip:'—')+'</div>'+(s.uptime!==undefined?'<div class="key">Uptime</div><div>'+fmtUptime(s.uptime)+'</div>':'')+(extra||'')+'</div></div>'}
+async function refreshStatus(){try{const r=await fetch('/api/state',{cache:'no-store'});if(r.status===401){location.href='/';return}const s=await r.json();let html='';html+=serviceCard(s.services.master,'Master','Control / UI','');html+=storageCard(s.nodes.NODE1,'Primary Storage','Main NAS data');html+=storageCard(s.nodes.NODE2,'Backup Node','Reserved for backup / background tasks');html+=serviceCard(s.services.dns,'C3 DNS','Local DNS service','');html+=serviceCard(s.services.monitor,'ESP32 Monitor','Monitor / OLED','<div class="key">Wi-Fi RSSI</div><div>'+s.services.monitor.rssi+' dBm</div>');document.getElementById('cards').innerHTML=html}catch(e){document.getElementById('cards').innerHTML='<div class="card">Unable to load system status.</div>'}}
+refreshStatus();setInterval(refreshStatus,3000);
+</script>
+</body>
+</html>
