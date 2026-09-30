@@ -1,0 +1,78 @@
+Swiftwing NAS · ESP32 Monitor fan wiring
+========================================
+
+Default mode: 4-wire PWM fan for Raspberry Pi 5
+------------------------------------------------
+Board: standard ESP32 Dev Module / ESP32-WROOM-32
+PWM control output: GPIO25, 25 kHz, 8-bit duty cycle
+Fan supply: 5 V from a supply with enough current for both the fan and board
+OLED I2C remains on GPIO21 (SDA) and GPIO22 (SCL).
+
+The website slider controls the dedicated PWM input. GPIO25 only drives a
+small signal transistor; it does not power the fan motor. Connect the fan's
++5 V and GND directly to a suitable 5 V source. The Monitor and fan supply
+must share ground. The same 5 V source may power the Monitor if it has enough
+current margin; connect the fan directly to that supply, not through the
+ESP32's 3.3 V regulator or GPIO.
+
+For the Raspberry Pi 5 fan-header pinout, Raspberry Pi documents:
+  Pin 1 red    -> +5 V supply
+  Pin 2 blue   -> PWM control input
+  Pin 3 black  -> GND
+  Pin 4 yellow -> Tach (leave unconnected; this firmware does not read RPM)
+
+This pin order applies to the Pi 5 JST-SH fan-header cable. Generic PC 4-pin
+fans may use a different connector, voltage, and wire order; verify the label
+and manufacturer's pinout before connecting power.
+
+Open-collector driver (required)
+-------------------------------
+Use a small NPN transistor (for example, 2N3904) or an N-channel MOSFET as an
+open-collector/open-drain switch on the PWM wire:
+
+  Fan PWM (blue) ------------------------- NPN collector
+  NPN emitter ---------------------------- Common GND
+  ESP32 GPIO25 ---- 2.2 kohm resistor ---- NPN base
+  NPN base -------- 10 kohm resistor ----- Common GND
+  ESP32 GND ------------------------------ Common GND
+
+The fan provides the PWM input pull-up. Do not add a pull-up to 5 V unless
+the fan datasheet explicitly requires one, and never connect the PWM wire
+directly to GPIO25. With the transistor released, the fan's pull-up makes the
+control input high (full-speed fail-safe). GPIO25's 25 kHz signal is inverted
+by the transistor stage so the website's 100% setting means maximum speed.
+
+Fan motor power must not pass through a breadboard or GPIO pin. Firmware loads
+and applies the saved setting before it waits for Wi-Fi, and the saved setting
+is held while Wi-Fi reconnects. First boot defaults the speed to Off; from Off,
+a new nonzero setting gets a 300 ms full-speed start pulse. The selected
+setting is saved in the Monitor's NVS.
+Some fans have a nonzero minimum speed or do not stop at 0%; check the fan's
+specification and use the website's Off button to set 0%.
+
+Legacy 2-wire/3-wire fans
+------------------------
+The firmware can still use the previous low-side power-switch circuit. In
+Swiftwing_ESP32_Monitor.ino, set FAN_OUTPUT_4WIRE_PWM to 0 and wire a
+logic-level N-channel MOSFET as follows:
+
+  Fan supply +  -------------------------- Fan +
+  Fan -        -------------------------- MOSFET drain
+  MOSFET source -------------------------- Supply GND
+  ESP32 GND    -------------------------- Supply GND
+  ESP32 GPIO25 ---- 100–220 ohm resistor - MOSFET gate
+  MOSFET gate  ---- 10 kohm resistor ----- Supply GND
+
+The MOSFET must fully turn on from a 3.3 V gate signal and be rated for the
+fan's voltage and startup current. Do not connect this power-switch wiring
+while FAN_OUTPUT_4WIRE_PWM is set to 1.
+
+Website
+-------
+Sign in with the owner account and open System Status > ESP32 Monitor >
+Cooling fan. Choose 0–100% in 5% steps and press Apply speed. The page reports
+the requested PWM setting; no tachometer/RPM input is connected.
+
+References:
+  https://www.raspberrypi.com/documentation/computers/raspberry-pi.html#raspberry-pi-5-fan-connector-pinout
+  https://glkinst.com/cables/cable_pics/4_Wire_PWM_Spec.pdf

@@ -1,0 +1,235 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" id="themeColorMeta" content="#060b17">
+<title>Swiftwing NAS · Access</title>
+<script>try{if(localStorage.getItem('swiftwing-theme')==='light')document.documentElement.dataset.theme='light'}catch(e){}</script>
+<style>
+/* Inline source: see login.css */
+</style>
+</head>
+<body>
+<div id="entryIntro" class="entryIntro" hidden role="region" aria-label="Swiftwing NAS introduction">
+  <div class="introStage" id="introStage" role="button" tabindex="0" aria-label="Enter Swiftwing NAS">
+    <div class="introOrbital" aria-hidden="true">
+      <div class="introHalo"></div>
+      <svg class="introEmblem" viewBox="0 0 144 144">
+      <defs>
+        <radialGradient id="introCoreFill" cx="38%" cy="32%" r="74%">
+          <stop class="introCoreLight" offset="0"></stop>
+          <stop class="introCoreMid" offset=".5"></stop>
+          <stop class="introCoreEdge" offset="1"></stop>
+        </radialGradient>
+        <linearGradient id="introSweepFill" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#91a9e8" stop-opacity="0"></stop>
+          <stop offset=".5" stop-color="#b8c8ee" stop-opacity=".86"></stop>
+          <stop offset="1" stop-color="#91a9e8" stop-opacity="0"></stop>
+        </linearGradient>
+      </defs>
+      <circle class="introOrbitTrack" cx="72" cy="72" r="65"></circle>
+      <circle class="introOrbitFine" cx="72" cy="72" r="53"></circle>
+      <circle class="introCore" cx="72" cy="72" r="31" fill="url(#introCoreFill)"></circle>
+      <circle class="introOpticSweep" cx="72" cy="72" r="65" fill="none" stroke="url(#introSweepFill)"></circle>
+      <circle class="introOrbitDraw" cx="72" cy="72" r="65"></circle>
+      <g class="introRotor">
+        <path class="introRotorArc" d="M72 7a65 65 0 0 1 43 16"></path>
+        <circle class="introSatellite" cx="72" cy="7" r="2"></circle>
+      </g>
+      <path class="introArrow" d="M53 91 91 53M63 53h28v28"></path>
+      <circle class="introNode" cx="119" cy="39" r="2"></circle>
+      </svg>
+    </div>
+    <p class="introWordmark">SWIFTWING</p>
+    <p class="introDescriptor">PRIVATE STORAGE <span>·</span> MASTER 01</p>
+    <div class="introProgress" aria-hidden="true"><span></span></div>
+  </div>
+</div>
+<div class="wrap">
+  <button id="themeToggle" class="themeSwitch themeSwitchFloating glassSurface" type="button" aria-pressed="false" onclick="toggleTheme()"><span class="themeGlyph" aria-hidden="true">◐</span><span class="themeLabel">Light mode</span></button>
+  <div class="card">
+    <section class="loginPlate">
+      <div class="loginBrand">
+        <div class="loginMark">↗</div>
+        <div><strong>SWIFTWING</strong><small>LOCAL STORAGE / ARRAY</small></div>
+      </div>
+      <div class="loginCopy">
+        <div class="loginEyebrow">Access Gate / Master</div>
+        <h2>Your files,<br>in formation.</h2>
+        <p>Sign in to manage the storage volume, cluster status and network setup.</p>
+      </div>
+      <div class="loginMeta">MASTER CONTROL PLANE &nbsp;·&nbsp; PRIVATE SESSION</div>
+    </section>
+    <section class="loginForm">
+      <div class="formEyebrow">Storage Array / 01</div>
+      <h1 class="formTitle">Sign in</h1>
+      <p id="authDescription" class="formSub">Enter your Swiftwing NAS credentials to continue.</p>
+      <div class="authModes glassSurface" role="tablist" aria-label="Account access">
+        <button id="signInMode" class="selected" type="button" role="tab" aria-selected="true" onclick="setAuthMode('login')">Sign in</button>
+        <button id="requestMode" type="button" role="tab" aria-selected="false" onclick="setAuthMode('request')">Request access</button>
+      </div>
+      <form id="loginForm" method="POST" action="/login" class="authForm">
+        <label for="username">Username</label>
+        <input id="username" name="username" placeholder="Enter username" autocomplete="username" required>
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" placeholder="Enter password" autocomplete="current-password" required>
+        <button type="submit">Open console</button>
+      </form>
+      <form id="requestForm" method="POST" action="/register" class="authForm" hidden>
+        <label for="newUsername">Choose a username</label>
+        <input id="newUsername" name="username" placeholder="e.g. alex.design" autocomplete="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9][A-Za-z0-9._-]{2,23}" title="3–24 letters, numbers, dots, hyphens, or underscores" required>
+        <label for="newPassword">Create a password</label>
+        <input id="newPassword" name="password" type="password" placeholder="At least 8 characters" autocomplete="new-password" minlength="8" maxlength="64" required>
+        <label for="confirmPassword">Confirm password</label>
+        <input id="confirmPassword" name="confirmPassword" type="password" placeholder="Enter the same password again" autocomplete="new-password" minlength="8" maxlength="64" required>
+        <button type="submit">Request approval</button>
+      </form>
+      <div id="authMessage" class="authMessage" aria-live="polite"></div>
+      <div class="meta">New accounts wait for owner approval before sign-in. The owner can see your username, never your password. Accounts share this NAS volume; use a trusted LAN or VPN (HTTP).</div>
+    </section>
+  </div>
+</div>
+<script>
+function setAuthMode(mode,clearMessage=true){
+  const request=mode==='request';
+  document.getElementById('loginForm').hidden=request;
+  document.getElementById('requestForm').hidden=!request;
+  document.getElementById('signInMode').classList.toggle('selected',!request);
+  document.getElementById('requestMode').classList.toggle('selected',request);
+  document.getElementById('signInMode').setAttribute('aria-selected',String(!request));
+  document.getElementById('requestMode').setAttribute('aria-selected',String(request));
+  document.querySelector('.formTitle').textContent=request?'Request access':'Sign in';
+  document.getElementById('authDescription').textContent=request?'Choose your username and password. The NAS owner must approve your request before you can sign in.':'Enter your Swiftwing NAS credentials to continue.';
+  if(clearMessage){const message=document.getElementById('authMessage');message.textContent='';message.removeAttribute('data-kind')}
+}
+
+document.getElementById('loginForm').addEventListener('submit',async event=>{
+  event.preventDefault();
+  const form=event.currentTarget;
+  const message=document.getElementById('authMessage');
+  const button=form.querySelector('button[type="submit"]');
+  button.disabled=true;button.textContent='Signing in…';message.textContent='';message.removeAttribute('data-kind');
+  try{
+    const body=new URLSearchParams(new FormData(form));
+    const response=await fetch('/login',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body,redirect:'follow'});
+    if(response.redirected){window.location.assign('/');return}
+    const detail=await response.text();
+    message.textContent=detail||'Unable to sign in.';message.dataset.kind='error';
+  }catch(error){message.textContent='The NAS could not be reached. Try again.';message.dataset.kind='error'}
+  finally{button.disabled=false;button.textContent='Open console'}
+});
+
+document.getElementById('requestForm').addEventListener('submit',async event=>{
+  event.preventDefault();
+  const form=event.currentTarget;
+  const message=document.getElementById('authMessage');
+  const button=form.querySelector('button[type="submit"]');
+  const password=document.getElementById('newPassword').value;
+  const confirmation=document.getElementById('confirmPassword').value;
+  if(password!==confirmation){message.textContent='The passwords do not match.';message.dataset.kind='error';return}
+  button.disabled=true;button.textContent='Sending request…';message.textContent='';message.removeAttribute('data-kind');
+  try{
+    const body=new URLSearchParams(new FormData(form));
+    const response=await fetch('/register',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});
+    const result=await response.json();
+    if(!response.ok)throw new Error(result.message||'Unable to create account.');
+    message.textContent=result.message||'Request submitted. You can sign in after the NAS owner approves it.';
+    message.dataset.kind='success';
+    form.reset();
+    setAuthMode('login',false);
+  }catch(error){message.textContent=error.message||'Unable to create account.';message.dataset.kind='error'}
+  finally{button.disabled=false;button.textContent='Request approval'}
+});
+</script>
+<script>
+function applyTheme(theme,persist){const selected=theme==='light'?'light':'dark';document.documentElement.dataset.theme=selected;const light=selected==='light';document.querySelectorAll('.themeSwitch').forEach(button=>{button.setAttribute('aria-pressed',String(light));button.setAttribute('aria-label',light?'Switch to dark theme':'Switch to light theme');button.innerHTML=light?'<span class="themeGlyph" aria-hidden="true">◑</span><span class="themeLabel">Dark mode</span>':'<span class="themeGlyph" aria-hidden="true">◐</span><span class="themeLabel">Light mode</span>'});const meta=document.getElementById('themeColorMeta');if(meta)meta.content=light?'#edf2f8':'#060b17';if(persist){try{localStorage.setItem('swiftwing-theme',selected)}catch(e){}}}
+function toggleTheme(){applyTheme(document.documentElement.dataset.theme==='light'?'dark':'light',true)}
+window.addEventListener('storage',event=>{if(event.key==='swiftwing-theme')applyTheme(event.newValue,false)});
+applyTheme(document.documentElement.dataset.theme||'dark',false);
+function setupGlassInteractions(){if(!window.matchMedia('(hover: hover) and (pointer: fine)').matches||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;let active=null,frame=0,x=0,y=0;document.addEventListener('pointermove',event=>{const surface=event.target.closest&&event.target.closest('.glassSurface');if(!surface){if(active){active.style.removeProperty('--glass-x');active.style.removeProperty('--glass-y');active=null}return}active=surface;x=event.clientX;y=event.clientY;if(!frame)frame=requestAnimationFrame(()=>{frame=0;if(!active||!active.isConnected)return;const rect=active.getBoundingClientRect();active.style.setProperty('--glass-x',Math.max(0,Math.min(100,(x-rect.left)/rect.width*100))+'%');active.style.setProperty('--glass-y',Math.max(0,Math.min(100,(y-rect.top)/rect.height*100))+'%')})},{passive:true});document.addEventListener('pointerout',event=>{const surface=event.target.closest&&event.target.closest('.glassSurface');if(surface&&!surface.contains(event.relatedTarget)){surface.style.removeProperty('--glass-x');surface.style.removeProperty('--glass-y');if(active===surface)active=null}},true)}
+setupGlassInteractions();
+</script>
+<script>
+(function setupEntryIntro(){
+  const curtain=document.getElementById('entryIntro');
+  const stage=document.getElementById('introStage');
+  const orbital=stage&&stage.querySelector('.introOrbital');
+  const content=document.querySelector('.wrap');
+  const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
+  const finePointer=window.matchMedia('(hover: hover) and (pointer: fine)');
+  if(!curtain||!stage||!orbital||!content||reducedMotion.matches)return;
+  const watchMotionPreference=callback=>{
+    if(typeof reducedMotion.addEventListener==='function')reducedMotion.addEventListener('change',callback);
+    else if(typeof reducedMotion.addListener==='function')reducedMotion.addListener(callback);
+  };
+  const stopWatchingMotionPreference=callback=>{
+    if(typeof reducedMotion.removeEventListener==='function')reducedMotion.removeEventListener('change',callback);
+    else if(typeof reducedMotion.removeListener==='function')reducedMotion.removeListener(callback);
+  };
+
+  document.documentElement.classList.add('intro-active');
+  document.body.classList.add('intro-running');
+  curtain.hidden=false;
+  content.setAttribute('aria-hidden','true');
+  content.inert=true;
+
+  let complete=false;
+  let exitTimer=0;
+  let cleanupTimer=0;
+  function onStagePointerMove(event){
+    if(complete||event.pointerType==='touch')return;
+    const bounds=stage.getBoundingClientRect();
+    const x=(event.clientX-(bounds.left+bounds.width/2))/bounds.width;
+    const y=(event.clientY-(bounds.top+bounds.height/2))/bounds.height;
+    orbital.style.setProperty('--intro-tilt-x',Math.max(-6,Math.min(6,-y*15))+'deg');
+    orbital.style.setProperty('--intro-tilt-y',Math.max(-6,Math.min(6,x*15))+'deg');
+  }
+  function resetStageTilt(){
+    orbital.style.removeProperty('--intro-tilt-x');
+    orbital.style.removeProperty('--intro-tilt-y');
+  }
+  function onKeyDown(event){
+    if(complete)return;
+    if(event.key==='Escape'||event.key==='Enter'||event.key===' '){
+      event.preventDefault();
+      skipIntro();
+    }
+  }
+  function restore(){
+    if(complete)return;
+    complete=true;
+    window.clearTimeout(exitTimer);
+    window.clearTimeout(cleanupTimer);
+    document.documentElement.classList.remove('intro-active');
+    document.body.classList.remove('intro-running','intro-unveiling');
+    curtain.remove();
+    content.inert=false;
+    content.removeAttribute('aria-hidden');
+    stopWatchingMotionPreference(onMotionPreferenceChange);
+    document.removeEventListener('keydown',onKeyDown);
+    stage.removeEventListener('click',skipIntro);
+    stage.removeEventListener('pointermove',onStagePointerMove);
+    stage.removeEventListener('pointerleave',resetStageTilt);
+  }
+  function onMotionPreferenceChange(event){if(event.matches)restore()}
+  function skipIntro(){restore()}
+  function beginReveal(){
+    if(complete)return;
+    document.body.classList.remove('intro-running');
+    document.body.classList.add('intro-unveiling');
+    curtain.classList.add('intro-closing');
+    cleanupTimer=window.setTimeout(restore,940);
+  }
+  stage.addEventListener('click',skipIntro);
+  if(finePointer.matches){
+    stage.addEventListener('pointermove',onStagePointerMove,{passive:true});
+    stage.addEventListener('pointerleave',resetStageTilt);
+  }
+  document.addEventListener('keydown',onKeyDown);
+  watchMotionPreference(onMotionPreferenceChange);
+  exitTimer=window.setTimeout(beginReveal,1550);
+})();
+</script>
+</body>
+</html>
